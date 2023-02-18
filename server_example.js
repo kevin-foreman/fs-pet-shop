@@ -51,16 +51,24 @@ app.get('/pets/:id/', (req, res, next) => {
 
 app.post('/pets', (req, res, next) => {
 
-    fs.appendFile('./assets/pets.json', URL.push(req.body), (err, next) => {
-        // parsedEntry = JSON.parse(req.body);
+    fs.readFile('./assets/pets.json', (err, data, next) => {
         console.log(req.body);
-        // response = {
-        //     name:req.body.name,
-        //     age:req.body.age,
-        //     kind:req.body.kind
-        // };
-        res.send(req.body);
+        const jsonData = JSON.parse(data);
+        jsonData.push(req.body);
+
+    fs.writeFile('./assets/pets.json', JSON.stringify(jsonData), (err) => {
+        res.status(200).json(jsonData);
     });
+    });
+});
+
+// const bodyParser = require('body-parser');
+// app.use(bodyParser.json());
+
+app.post('/pets', (req, res) => {
+    const reqData = req.body;
+    console.log('reqData', reqData);
+    res.send('Ok');
 });
 
 app.use((err, req, res) => {
