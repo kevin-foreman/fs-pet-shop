@@ -4,71 +4,73 @@ const app = express();
 // express.static(root); // root, or source of the static files can also be chained with [options]
 // app.use(express.static('assets'));
 const fs = require('fs');
-const { nextTick } = require('process');
+const { next } = require('process');
+// const colors = require('colors/safe');
 
-app.use(express.json());
-
-
+app.use(express.json()); 
 
 // handle requests with routes
 app.get('/pets', (req, res, next) => {
     fs.readFile('./assets/pets.json', (err, data) => {
         if (err) {
             next(err);
-        }
+        };
         const allPets = JSON.parse(data);
         res.send(allPets);
     });
 });
 
-app.get('/pets/0', (req, res, next) => {
-    fs.readFile('./assets/pets.json', (err, data, next) => {
-        const firstPet = JSON.parse(data)[0];
-        res.send(firstPet);
-    })
-});
-
-app.get('/pets/1', (req, res, next) => {
-    fs.readFile('./assets/pets.json', (err, data, next) => {
-        const firstPet = JSON.parse(data)[1];
-        res.send(firstPet);
-    })
-});
-
+// Get pet by id (index where it sits in the array)
 app.get('/pets/:id/', (req, res, next) => {
-    const id = parseInt(req.params.id);
-    if (`!/pets/:id/`) {
-        res.status(404);
-        throw new Error("Not fucking found");
-    };
-
-    fs.readFile('./assets.pets.json', (err, data, next) => {
-        const allPets = JSON.parse(data);
-        res.json(allPets[id]);
-    });
-
+    const id = req.params.id;
+    fs.readFile('./assets/pets.json', (err, data) => {
+        if (err) {
+            return next(err);
+        };
+        const requestedPet = JSON.parse(data);
+        res.json(requestedPet[id]);
+    }); 
 });
 
+// Add a pet to array
 app.post('/pets', (req, res, next) => {
-
     fs.readFile('./assets/pets.json', (err, data, next) => {
         console.log(req.body);
         const jsonData = JSON.parse(data);
         jsonData.push(req.body);
-
-    fs.writeFile('./assets/pets.json', JSON.stringify(jsonData), (err) => {
-        res.status(200).json(jsonData);
-    });
+        fs.writeFile('./assets/pets.json', JSON.stringify(jsonData), (err) => {
+            res.status(200).json(jsonData);
+        });
     });
 });
 
-// const bodyParser = require('body-parser');
-// app.use(bodyParser.json());
+// Update a pet by id number
+app.delete("/pets/:id", (req, res, next) => {
+    // Update pet with that ID (after the colon)
+});
 
-app.post('/pets', (req, res) => {
-    const reqData = req.body;
-    console.log('reqData', reqData);
-    res.send('Ok');
+app.patch("/pets/:id", (req, res, next) => {
+    const petId = req.params.id;
+    const updatedPet = req.body;
+    fs.readFile('./assets/pets.json', (err, data) => {
+        if (err) {
+            return next(err);
+        };
+        const pets = JSON.parse(data);
+        if (petId === -1) {
+            return res.status(404).json({ message: `Pet with ID ${petId} does not exist`});
+        };
+        const updatedPetInfo = { ...pets[petId], ...updatedPet };
+        pets[petId] = updatedPetInfo;
+
+        fs.writeFile('./assets/pets.json', JSON.stringify(pets), (err) => {
+            if (err) {
+                return next(err);
+            };
+            res.status(200).json(updatedPetInfo);
+        });
+
+    });
 });
 
 app.use((err, req, res) => {
