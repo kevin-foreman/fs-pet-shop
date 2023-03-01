@@ -4,7 +4,7 @@ const app = express();
 // express.static(root); // root, or source of the static files can also be chained with [options]
 // app.use(express.static('assets'));
 const fs = require('fs');
-const { next } = require('process');
+const next = require('process');
 // const colors = require('colors/safe');
 
 app.use(express.json()); 
@@ -22,10 +22,13 @@ app.get('/pets', (req, res, next) => {
 
 // Get pet by id (index where it sits in the array)
 app.get('/pets/:id/', (req, res, next) => {
+    if (err) {
+        throw new Error(err);
+    };
     const id = req.params.id;
     fs.readFile('./assets/pets.json', (err, data) => {
         if (err) {
-            return next(err);
+            throw new Error(err);
         };
         const requestedPet = JSON.parse(data);
         res.json(requestedPet[id]);
@@ -73,9 +76,15 @@ app.patch("/pets/:id", (req, res, next) => {
     });
 });
 
-app.use((err, req, res) => {
-    console.error(err.stack);
-    res.status(404).send("Not found, my guy!");
+app.use((error, req, res, next) => {
+    console.error(error);
+    // res.render('errorPage'); // renders an error page
+    res.status(error.status || 500).send({
+        error: {
+            status: error.status || 500,
+            message: error.message || "Not found, my guy!",
+        }
+    });
 });
 
 
