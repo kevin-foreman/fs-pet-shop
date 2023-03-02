@@ -94,7 +94,7 @@ app.patch("/pets/:id", (req, res, next) => {
 
 app.use((error, req, res, next) => {
     console.error(error);
-    // res.render('errorPage'); // renders an error page
+    // res.render('errorPage'); // renders an error page 
     res.status(error.status || 500).send({
         error: {
             status: error.status || 500,
