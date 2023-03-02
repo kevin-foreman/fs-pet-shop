@@ -31,7 +31,7 @@ app.get('/pets', (req, res, next) => {
 
 // Get pet by id (index where it sits in the array)
 app.get('/pets/:id/', (req, res, next) => {
-    
+
     const id = Number.parseInt(req.params.id);
     const result = pool.query('SELECT name, kind, age FROM pets WHERE id = $1', [id], (err, result) => {
         if (err) {
@@ -40,7 +40,7 @@ app.get('/pets/:id/', (req, res, next) => {
         const pet = result.rows[0];
         console.log(pet);
         res.send(pet);
-    }); 
+    });
 });
 
 // Add a pet to array
@@ -53,14 +53,14 @@ app.post('/pets', (req, res, next) => {
         return res.status(400).send('Error: missing values')
     } else {
 
-    pool.query('INSERT INTO pets (name, kind, age) VALUES ($1, $2, $3) RETURNING *;', [name, kind, age], (err, result) => {
-        if (err) {
-            return next(err);
-        };
-        let petInfo = result.rows[0];
-        console.log('Added: ' + petInfo);
-        res.status(200).send(petInfo);
-    });
+        pool.query('INSERT INTO pets (name, kind, age) VALUES ($1, $2, $3) RETURNING *;', [name, kind, age], (err, result) => {
+            if (err) {
+                return next(err);
+            };
+            let petInfo = result.rows[0];
+            console.log('Added: ' + petInfo);
+            res.status(200).send(petInfo);
+        });
     };
 
 });
@@ -78,18 +78,40 @@ app.delete("/pets/:id", (req, res, next) => {
 });
 
 app.patch("/pets/:id", (req, res, next) => {
+    // Parse id from URL
     const id = Number.parseInt(req.params.id);
-    const age = Number.parseInt(req.params.age);
+    // Get data from request body
+    const age = Number.parseInt(req.body.age);
     const { name, kind } = req.body;
 
-    if (name && kind && age && !Number.isNaN(age)) {
-        res.status(400).send("No pet found with those details");
-    } 
-        pool.query('UPDATE pets SET name=$1, age=$2, kind=$3 WHERE id = $4', [name, kind, age, id], (err, result));
+    // if (name && kind && age && !Number.isNaN(age)) {
+    //     res.status(400).send("No pet found with those details");
+    // } 
+
+    pool.query('SELECT * FROM pets WHERE id = $1', [id], (err, result) => {
+        if (err) {
+            return next(err);
+        };
+
         const pet = result.rows[0];
-        console.log("Single Pet ID", id, "values", pet);
-        res.status(200).send("Pet updated");
-        res.send(pet);
+
+        if (!pet) {
+            res.status(404).send("There's no pet with that ID")
+        };
+
+        const updatedName = name || pet.name;
+        const updatedAge = age || pet.age;
+        const updatedKind = kind || pet.kind;
+
+        pool.query('UPDATE pets SET name=$1, age=$2, kind=$3 WHERE id = $4 RETURNING *', [updatedName, updatedAge, updatedKind, id], (err, data) => {
+            if (err) {
+                return next(err);
+            };
+
+            res.send(data.rows[0])
+        });
+    });
+
 });
 
 app.use((error, req, res, next) => {
